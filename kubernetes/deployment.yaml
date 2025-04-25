@@ -1,0 +1,147 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+   name: netsentry
+   labels:
+      app: netsentry
+spec:
+   replicas: 1
+   selector:
+      matchLabels:
+         app: netsentry
+   template:
+      metadata:
+         labels:
+            app: netsentry
+      spec:
+         containers:
+            - name: netsentry
+              image: yourusername/netsentry:latest
+              imagePullPolicy: Always
+              args: ["--api-enable", "--web-enable", "--config", "/app/configs/netsentry.yaml"]
+              ports:
+                 - containerPort: 8080
+                   name: api
+                 - containerPort: 9090
+                   name: web
+                 - containerPort: 9091
+                   name: prometheus
+              volumeMounts:
+                 - name: config-volume
+                   mountPath: /app/configs
+                 - name: data-volume
+                   mountPath: /app/data
+              securityContext:
+                 capabilities:
+                    add: ["NET_ADMIN", "NET_RAW"]
+         volumes:
+            - name: config-volume
+              configMap:
+                 name: netsentry-config
+            - name: data-volume
+              persistentVolumeClaim:
+                 claimName: netsentry-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+   name: netsentry-api
+spec:
+   selector:
+      app: netsentry
+   ports:
+      - port: 8080
+        targetPort: api
+   type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+   name: netsentry-web
+spec:
+   selector:
+      app: netsentry
+   ports:
+      - port: 9090
+        targetPort: web
+   type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+   name: netsentry-prometheus
+   annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "9091"
+spec:
+   selector:
+      app: netsentry
+   ports:
+      - port: 9091
+        targetPort: prometheus
+   type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+   name: netsentry-config
+data:
+   netsentry.yaml: |
+      # NetSentry Configuration
+      log_level: "info"
+      log_file: "/app/data/netsentry.log"
+      metric_retention_seconds: 86400
+      database_type: "sqlite"
+      database_path: "/app/data/netsentry.db"
+
+      enable_api: true
+      api_port: 8080
+
+      enable_web: true
+      web_port: 9090
+
+      enable_packet_capture: true
+      capture_interface: "eth0"
+
+      enable_prometheus_exporter: true
+      prometheus_port: 9091
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+   name: netsentry-data-pvc
+spec:
+   accessModes:
+      - ReadWriteOnce
+   resources:
+      requests:
+         storage: 10Gi
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+   name: netsentry-ingress
+   annotations:
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+   rules:
+      - host: api.netsentry.example.com
+        http:
+           paths:
+              - path: /
+                pathType: Prefix
+                backend:
+                   service:
+                      name: netsentry-api
+                      port:
+                         number: 8080
+      - host: dashboard.netsentry.example.com
+        http:
+           paths:
+              - path: /
+                pathType: Prefix
+                backend:
+                   service:
+                      name: netsentry-web
+                      port:
+                         number: 9090

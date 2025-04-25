@@ -1,0 +1,50 @@
+# NetSentry Configuration
+
+# General settings
+log_level: "info"
+log_file: "netsentry.log"
+metric_retention_seconds: 86400 # 24 hours
+database_type: "sqlite"
+database_path: "data/netsentry.db"
+
+# API settings
+enable_api: true
+api_port: 8080
+api_threads: 4
+api_cors_allow_origin: "*"
+
+# Web dashboard settings
+enable_web: true
+web_port: 9090
+web_threads: 2
+
+# Network capture settings
+enable_packet_capture: true
+capture_interface: "eth0"
+packet_buffer_size: 8192
+capture_payload: false
+capture_payload_max_size: 1024
+
+# Alert settings
+alert_cooldown_seconds: 60
+alert_notification_email: ""
+alert_notification_webhook: ""
+
+# Threshold settings
+cpu_threshold_warning: 75
+cpu_threshold_critical: 90
+memory_threshold_warning: 70
+memory_threshold_critical: 85
+disk_threshold_warning: 80
+disk_threshold_critical: 90
+
+# Database cleanup
+enable_auto_cleanup: true
+cleanup_interval_seconds: 3600
+metrics_max_age_days: 30
+connections_max_age_days: 7
+alerts_max_age_days: 90
+
+# Exporters
+enable_prometheus_exporter: true
+prometheus_port: 9091
