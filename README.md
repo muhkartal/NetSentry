@@ -487,13 +487,63 @@ NetSentry provides a comprehensive REST API for integration with other systems. 
 
 For complete API documentation, see [API.md](docs/API.md).
 
-## Dashboard
+### Terminal Output
 
-NetSentry includes a web dashboard available at http://localhost:9090 when running with the default configuration.
+NetSentry provides comprehensive monitoring information directly in the terminal:
 
-<div align="center">
-  <img src="docs/images/netsentry-metrics.png" alt="NetSentry Metrics View" width="80%"/>
-</div>
+```
+$ ./netsentry --interface eth0 --api-enable --web-enable
+
+[2025-04-26 14:32:10] [INFO] NetSentry v1.0.0 starting up...
+[2025-04-26 14:32:10] [INFO] Thread pool initialized with 8 threads
+[2025-04-26 14:32:10] [INFO] Database initialized: sqlite
+[2025-04-26 14:32:10] [INFO] System collectors started
+[2025-04-26 14:32:10] [INFO] Capturing packets on interface: eth0
+[2025-04-26 14:32:10] [INFO] REST API server started on port 8080
+[2025-04-26 14:32:10] [INFO] Web dashboard started on port 9090
+[2025-04-26 14:32:10] [INFO] NetSentry is running. Press Ctrl+C to exit.
+
+NetSentry - Network Monitoring Tool
+==================================
+
+System Metrics:
+--------------
+cpu.usage                     : 72.30
+cpu.core.0.usage              : 68.42
+cpu.core.1.usage              : 76.15
+cpu.core.2.usage              : 75.84
+cpu.core.3.usage              : 69.03
+memory.total                  : 16384.00
+memory.used                   : 10617.86
+memory.free                   : 5766.14
+memory.usage_percent          : 64.80
+
+Network Statistics:
+------------------
+Packets captured: 14528
+Bytes captured: 26853421
+
+Top Connections:
+1. 192.168.1.105:48329 -> 35.214.152.91:443 [TLS]
+   Sent: 1342 packets, 286421 bytes | Received: 2156 packets, 24531642 bytes
+2. 192.168.1.105:45129 -> 172.217.169.36:443 [TLS]
+   Sent: 842 packets, 156214 bytes | Received: 1024 packets, 15124536 bytes
+3. 192.168.1.107:52415 -> 104.26.10.233:443 [TLS]
+   Sent: 645 packets, 124532 bytes | Received: 782 packets, 12653214 bytes
+4. 192.168.1.110:59812 -> 13.107.42.14:443 [TLS]
+   Sent: 421 packets, 86421 bytes | Received: 512 packets, 8653215 bytes
+5. 192.168.1.105:47291 -> 34.107.221.82:443 [TLS]
+   Sent: 312 packets, 65421 bytes | Received: 386 packets, 6325421 bytes
+
+Top Hosts by Traffic:
+1. 35.214.152.91: 24818063 bytes
+2. 172.217.169.36: 15280750 bytes
+3. 104.26.10.233: 12777746 bytes
+4. 13.107.42.14: 8739636 bytes
+5. 34.107.221.82: 6390842 bytes
+
+Thread pool queue size: 0
+```
 
 The dashboard provides:
 
