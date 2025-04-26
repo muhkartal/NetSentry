@@ -46,17 +46,15 @@ private:
     std::string log_filename_;
     std::ofstream log_file_;
     LogLevel current_level_;
-    mutable std::mutex mutex_;  // Must be mutable to use in const methods
+    mutable std::mutex mutex_;  // Fixed: marked as mutable for const methods
 };
 
-// Template implementations must be in the header file
-template<typename... Args>
-void Logger::log(LogLevel level, const char* format, Args&&... args) {
+// Template specialization for no arguments
+template<>
+inline void Logger::log<>(LogLevel level, const char* message) {
     if (level < current_level_) {
         return;
     }
-
-    std::string message = formatString(format, std::forward<Args>(args)...);
 
     auto now = std::chrono::system_clock::now();
     auto time_t_now = std::chrono::system_clock::to_time_t(now);
@@ -75,26 +73,28 @@ void Logger::log(LogLevel level, const char* format, Args&&... args) {
     log_file_ << "[" << timestamp << "] [" << logLevelToString(level) << "] " << message << std::endl;
 }
 
+// General template for arguments
 template<typename... Args>
-std::string Logger::formatString(const char* format, Args&&... args) {
-    // For simplicity in this version, we'll just handle the case of no args
-    if constexpr (sizeof...(args) == 0) {
-        return format;
-    } else {
-        // This is a simplified implementation
-        // In production, you would want a more robust solution
-        size_t buffer_size = 1024;
-        std::string result;
-        result.resize(buffer_size);
-
-        int written = snprintf(&result[0], buffer_size, format, std::forward<Args>(args)...);
-        if (written < 0) {
-            return "Error formatting string";
-        }
-
-        result.resize(written);
-        return result;
+inline void Logger::log(LogLevel level, const char* format, Args&&... args) {
+    if (level < current_level_) {
+        return;
     }
+
+    std::string message = formatString(format, std::forward<Args>(args)...);
+    log(level, message.c_str());
+}
+
+// Template implementation for formatString
+template<typename... Args>
+inline std::string Logger::formatString(const char* format, Args&&... args) {
+    char buffer[1024];
+    int result = snprintf(buffer, sizeof(buffer), format, std::forward<Args>(args)...);
+
+    if (result < 0) {
+        return "Error formatting string";
+    }
+
+    return std::string(buffer, result);
 }
 
 #define LOG_TRACE(...) ::netsentry::utils::Logger::getInstance().log(::netsentry::utils::LogLevel::TRACE, __VA_ARGS__)

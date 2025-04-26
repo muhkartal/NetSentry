@@ -60,7 +60,7 @@ const char* Logger::logLevelToString(LogLevel level) const {
     }
 }
 
-// NO template implementations here - they're all in the header
+// All template implementations have been moved to the header file
 
 }
 }
