@@ -46,12 +46,12 @@ private:
     std::string log_filename_;
     std::ofstream log_file_;
     LogLevel current_level_;
-    mutable std::mutex mutex_;  // Fixed: marked as mutable for const methods
+    mutable std::mutex mutex_;  // Changed to mutable to fix const method issue
 };
 
-// Template specialization for no arguments
-template<>
-inline void Logger::log<>(LogLevel level, const char* message) {
+// Template implementations need to be in the header file
+template<typename... Args>
+inline void Logger::log(LogLevel level, const char* format, Args&&... args) {
     if (level < current_level_) {
         return;
     }
@@ -69,22 +69,14 @@ inline void Logger::log<>(LogLevel level, const char* message) {
     char timestamp[32];
     std::strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", &tm_now);
 
+    // Format the message
+    char message_buffer[1024];
+    snprintf(message_buffer, sizeof(message_buffer), format, std::forward<Args>(args)...);
+
     std::lock_guard<std::mutex> lock(mutex_);
-    log_file_ << "[" << timestamp << "] [" << logLevelToString(level) << "] " << message << std::endl;
+    log_file_ << "[" << timestamp << "] [" << logLevelToString(level) << "] " << message_buffer << std::endl;
 }
 
-// General template for arguments
-template<typename... Args>
-inline void Logger::log(LogLevel level, const char* format, Args&&... args) {
-    if (level < current_level_) {
-        return;
-    }
-
-    std::string message = formatString(format, std::forward<Args>(args)...);
-    log(level, message.c_str());
-}
-
-// Template implementation for formatString
 template<typename... Args>
 inline std::string Logger::formatString(const char* format, Args&&... args) {
     char buffer[1024];
