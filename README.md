@@ -575,10 +575,10 @@ make -j$(nproc)
 ctest
 ```
 
-### Project Roadmap
+### Project Troubleshooting
 
 <details>
-<summary><strong>Click to view our development roadmap</strong></summary>
+<summary><strong>Click to view our development troubleshooting</strong></summary>
 
 #### Current Quarter
 
@@ -596,7 +596,7 @@ ctest
 
 </details>
 
-For more information about upcoming features and development plans, see our [ROADMAP.md](docs/ROADMAP.md).
+For more information about upcoming features and development plans, see our [TROBULESHOOTING.md](docs/TROBULESHOOTING.md).
 
 ## License
 
