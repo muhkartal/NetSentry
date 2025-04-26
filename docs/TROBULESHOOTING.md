@@ -1,127 +1,164 @@
-# NetSentry Project Roadmap
+# Troubleshooting Guide
 
-This document outlines the planned development roadmap for the NetSentry project. The roadmap is divided into milestones and may be adjusted based on user feedback and community contributions.
+This document provides solutions for common issues you might encounter when building or running NetSentry.
 
-## Current Status (v1.0.0)
+## Build Issues
 
-The initial release of NetSentry includes:
+### Template Implementation Errors
 
--  System metrics monitoring (CPU, memory)
--  Network packet capture and analysis
--  Alert system with configurable thresholds
--  REST API for data access
--  Web dashboard for visualization
--  Docker container deployment
--  Prometheus/Grafana integration
+One of the most common build issues involves template implementation in separate .cpp files. In C++, template implementations generally need to be visible at the point of instantiation, which typically means they should be in header files.
 
-## Short-Term Goals (v1.1.0)
+#### Error: "No declaration matches..."
 
-These features are planned for the next release:
+If you see errors like:
 
--  **Enhanced Protocol Analysis**
+```
+error: no declaration matches 'void netsentry::utils::Logger::log(netsentry::utils::LogLevel, const char*, T&&, Args&& ...)'
+```
 
-   -  Deep packet inspection for more protocols (HTTPS, SSH, etc.)
-   -  Protocol-specific metrics and alerting
-   -  TLS certificate monitoring
+**Solution:** Move the template implementation to the header file:
 
--  **Improved Dashboard**
+1. In `logger.hpp`, add the implementation inline after the declaration:
 
-   -  Customizable layouts
-   -  More visualization types
-   -  Dark/light theme options
-   -  Mobile-responsive design
+```cpp
+template<typename... Args>
+inline void Logger::log(LogLevel level, const char* format, Args&&... args) {
+    // Implementation here
+}
+```
 
--  **Advanced Alerting**
+2. Remove the implementation from `logger.cpp`
 
-   -  More notification channels (Slack, Discord, PagerDuty)
-   -  Alert correlation and grouping
-   -  Alert suppression during maintenance windows
-   -  Custom alert templates
+#### Error: "Binding reference of type... to 'const std::mutex' discards qualifiers"
 
--  **Additional Data Sources**
-   -  Process monitoring
-   -  File system metrics
-   -  Network interface statistics
-   -  Log file analysis
+This occurs when trying to lock a mutex in a const method:
 
-## Medium-Term Goals (v1.2.0)
+```
+error: binding reference of type 'std::lock_guard<std::mutex>::mutex_type&' to 'const std::mutex' discards qualifiers
+```
 
--  **Machine Learning Integration**
+**Solution:** Mark the mutex as `mutable` in the class definition:
 
-   -  Anomaly detection for network traffic
-   -  Predictive alerts based on trends
-   -  Automated baseline establishment
-   -  Behavioral analysis for security monitoring
+```cpp
+class Logger {
+private:
+    // Other members...
+    mutable std::mutex mutex_;  // Add mutable keyword
+};
+```
 
--  **Distributed Monitoring**
+### Complete Fix for Logger Implementation
 
-   -  Multi-node deployment support
-   -  Centralized management console
-   -  Agent-based collection for remote systems
-   -  Cross-node correlation
+Here's a complete fix for the logger implementation issues:
 
--  **User Management**
+1. **Update logger.hpp**:
 
-   -  Role-based access control
-   -  User authentication (LDAP, OAuth)
-   -  Audit logging
-   -  Team collaboration features
+```cpp
+// In the class definition:
+mutable std::mutex mutex_;  // Add mutable keyword
 
--  **Extended Storage Options**
-   -  Time-series database integration (InfluxDB, TimescaleDB)
-   -  Data retention policies
-   -  Data compression
-   -  Cold storage archiving
+// After the class definition:
+// Add template implementations inline
+template<typename... Args>
+inline void Logger::log(LogLevel level, const char* format, Args&&... args) {
+    if (level < current_level_) {
+        return;
+    }
 
-## Long-Term Vision (v2.0.0)
+    std::string message = formatString(format, std::forward<Args>(args)...);
+    log(level, message.c_str());
+}
 
--  **Security Information and Event Management (SIEM)**
+// Add specialization for no arguments
+template<>
+inline void Logger::log<>(LogLevel level, const char* message) {
+    // Implementation here
+}
 
-   -  Threat intelligence integration
-   -  Security event correlation
-   -  Compliance reporting
-   -  Incident response workflows
+template<typename... Args>
+inline std::string Logger::formatString(const char* format, Args&&... args) {
+    // Implementation here
+}
+```
 
--  **Network Performance Analysis**
+2. **Update logger.cpp**:
 
-   -  Advanced network topology mapping
-   -  Path analysis and bottleneck detection
-   -  Quality of Service monitoring
-   -  Predictive capacity planning
+```cpp
+// Remove template implementations, keep only non-template functions
+```
 
--  **Application Performance Monitoring**
+## Runtime Issues
 
-   -  Distributed tracing
-   -  Service maps
-   -  API monitoring
-   -  End-user experience metrics
+### Permission Issues with Packet Capture
 
--  **Enterprise Features**
-   -  High availability deployment
-   -  Horizontal scaling
-   -  Multi-tenant support
-   -  White-labeling options
+If you encounter permission errors when trying to capture packets:
 
-## How to Contribute
+```
+Failed to start packet capture on interface: eth0
+```
 
-We welcome contributions to help us achieve these roadmap items! Here's how you can help:
+**Solution:** Run NetSentry with elevated privileges:
 
-1. **Code Contributions**: Pick an item from the roadmap and submit a pull request
-2. **Testing**: Help test new features and provide feedback
-3. **Documentation**: Improve or expand the project documentation
-4. **Feature Requests**: Suggest new features or improvements
-5. **Bug Reports**: Report any issues you encounter
+```bash
+sudo ./netsentry --interface eth0
+```
 
-Please see our [CONTRIBUTING.md](CONTRIBUTING.md) guide for more details on how to contribute to the project.
+### Database Connection Failed
 
-## Feature Request Process
+If you see errors related to database initialization:
 
-Have a feature you'd like to see in NetSentry? Here's the process:
+```
+Failed to initialize database
+```
 
-1. Check the roadmap to see if it's already planned
-2. Search existing GitHub issues to avoid duplicates
-3. Create a new GitHub issue with the "feature request" template
-4. Include as much detail as possible about the feature
-5. Explain the use case and benefits of the feature
+**Solution:**
 
-The project maintainers will review feature requests regularly and update the roadmap accordingly.
+1. Check if the data directory exists and is writable
+2. For SQLite, ensure you have permission to write to the database file
+3. Configure a different database path in the config file
+
+## Configuration Issues
+
+### Unable to Start Web Server
+
+If the web server fails to start:
+
+```
+Failed to start web server on port 9090
+```
+
+**Solution:**
+
+1. Check if the port is already in use: `netstat -tuln | grep 9090`
+2. Configure a different port in the config file
+3. Stop any services using that port
+
+## Platform-Specific Issues
+
+### Linux
+
+Most Linux distributions will work fine with the provided setup. Ensure you have libpcap installed:
+
+```bash
+# Debian/Ubuntu
+sudo apt-get install -y libpcap-dev
+
+# CentOS/RHEL
+sudo yum install -y libpcap-devel
+```
+
+### macOS
+
+On macOS, you can install dependencies with Homebrew:
+
+```bash
+brew install cmake boost libpcap
+```
+
+### Windows
+
+Windows support is limited due to packet capture dependencies. Consider using:
+
+1. Windows Subsystem for Linux (WSL2)
+2. Docker Desktop for Windows
+3. A custom build with WinPcap/Npcap instead of libpcap
