@@ -43,7 +43,7 @@ void Logger::setLogLevel(LogLevel level) {
     current_level_ = level;
 }
 
-LogLevel Logger::getLogLevel() {
+LogLevel Logger::getLogLevel() const {
     std::lock_guard<std::mutex> lock(mutex_);
     return current_level_;
 }
@@ -58,6 +58,46 @@ const char* Logger::logLevelToString(LogLevel level) const {
         case LogLevel::CRITICAL: return "CRITICAL";
         default:                 return "UNKNOWN";
     }
+}
+
+template<typename T, typename... Args>
+void Logger::log(LogLevel level, const char* format, T&& arg, Args&&... args) {
+    if (level < current_level_) {
+        return;
+    }
+
+    std::string message = formatString(format, std::forward<T>(arg), std::forward<Args>(args)...);
+    log(level, message.c_str());
+}
+
+template<typename T>
+std::string Logger::formatString(const char* format, T&& arg) {
+    size_t buf_size = 1024;
+    std::string result;
+    result.resize(buf_size);
+
+    int retval = snprintf(&result[0], buf_size, format, std::forward<T>(arg));
+    if (retval < 0) {
+        return "Error formatting string";
+    }
+
+    result.resize(retval);
+    return result;
+}
+
+template<typename T, typename... Args>
+std::string Logger::formatString(const char* format, T&& arg, Args&&... args) {
+    size_t buf_size = 1024;
+    std::string result;
+    result.resize(buf_size);
+
+    int retval = snprintf(&result[0], buf_size, format, std::forward<T>(arg), std::forward<Args>(args)...);
+    if (retval < 0) {
+        return "Error formatting string";
+    }
+
+    result.resize(retval);
+    return result;
 }
 
 }

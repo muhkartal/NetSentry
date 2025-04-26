@@ -22,18 +22,11 @@ public:
     static void initialize(const std::string& filename, LogLevel level = LogLevel::INFO);
     static Logger& getInstance();
 
-    template<typename T, typename... Args>
-    void log(LogLevel level, const char* format, T&& arg, Args&&... args) {
-        if (level < current_level_) {
-            return;
-        }
-
-        std::string message = formatString(format, std::forward<T>(arg), std::forward<Args>(args)...);
-        log(level, message.c_str());
-    }
+    template<typename... Args>
+    void log(LogLevel level, const char* format, Args&&... args);
 
     void setLogLevel(LogLevel level);
-    LogLevel getLogLevel();
+    LogLevel getLogLevel() const;
 
 private:
     Logger();
@@ -42,35 +35,8 @@ private:
     Logger(const Logger&) = delete;
     Logger& operator=(const Logger&) = delete;
 
-    template<typename T>
-    std::string formatString(const char* format, T&& arg) {
-        size_t buf_size = 1024;
-        std::string result;
-        result.resize(buf_size);
-
-        int retval = snprintf(&result[0], buf_size, format, std::forward<T>(arg));
-        if (retval < 0) {
-            return "Error formatting string";
-        }
-
-        result.resize(retval);
-        return result;
-    }
-
-    template<typename T, typename... Args>
-    std::string formatString(const char* format, T&& arg, Args&&... args) {
-        size_t buf_size = 1024;
-        std::string result;
-        result.resize(buf_size);
-
-        int retval = snprintf(&result[0], buf_size, format, std::forward<T>(arg), std::forward<Args>(args)...);
-        if (retval < 0) {
-            return "Error formatting string";
-        }
-
-        result.resize(retval);
-        return result;
-    }
+    template<typename... Args>
+    std::string formatString(const char* format, Args&&... args);
 
     const char* logLevelToString(LogLevel level) const;
 
@@ -80,7 +46,7 @@ private:
     std::string log_filename_;
     std::ofstream log_file_;
     LogLevel current_level_;
-    std::mutex mutex_;
+    mutable std::mutex mutex_; // Fix: Made mutex mutable to use in const methods
 };
 
 #define LOG_TRACE(...) ::netsentry::utils::Logger::getInstance().log(::netsentry::utils::LogLevel::TRACE, __VA_ARGS__)
