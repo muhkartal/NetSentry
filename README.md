@@ -1,7 +1,7 @@
 # NetSentry
 
 <div align="center">
-  <img src="docs/images/netsentry-logo.png" alt="NetSentry Logo" width="200"/>
+  <!-- <img src="docs/images/netsentry-logo.png" alt="NetSentry Logo" width="200"/> -->
 
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/muhkartal/netsentry/ci.yml?branch=main)](https://github.com/muhkartal/netsentry/actions)
 [![Docker Image Size](https://img.shields.io/docker/image-size/muhkartal/netsentry/latest)](https://hub.docker.com/r/muhkartal/netsentry)
@@ -19,9 +19,9 @@
 
 NetSentry is a high-performance, extensible network monitoring system built with modern C++. It combines real-time system metrics collection, network packet analysis, and sophisticated alerting capabilities to provide comprehensive visibility into your network infrastructure.
 
-<div align="center">
+<!-- <div align="center">
   <img src="docs/images/netsentry-dashboard.png" alt="NetSentry Dashboard" width="800"/>
-</div>
+</div> -->
 
 ## Key Features
 
