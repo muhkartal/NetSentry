@@ -22,11 +22,18 @@ public:
     static void initialize(const std::string& filename, LogLevel level = LogLevel::INFO);
     static Logger& getInstance();
 
-    void setLogLevel(LogLevel level);
-    LogLevel getLogLevel() const;
+    template<typename T, typename... Args>
+    void log(LogLevel level, const char* format, T&& arg, Args&&... args) {
+        if (level < current_level_) {
+            return;
+        }
 
-    // Non-template function for simple case
-    void log(LogLevel level, const char* message);
+        std::string message = formatString(format, std::forward<T>(arg), std::forward<Args>(args)...);
+        log(level, message.c_str());
+    }
+
+    void setLogLevel(LogLevel level);
+    LogLevel getLogLevel();
 
 private:
     Logger();
@@ -34,6 +41,36 @@ private:
 
     Logger(const Logger&) = delete;
     Logger& operator=(const Logger&) = delete;
+
+    template<typename T>
+    std::string formatString(const char* format, T&& arg) {
+        size_t buf_size = 1024;
+        std::string result;
+        result.resize(buf_size);
+
+        int retval = snprintf(&result[0], buf_size, format, std::forward<T>(arg));
+        if (retval < 0) {
+            return "Error formatting string";
+        }
+
+        result.resize(retval);
+        return result;
+    }
+
+    template<typename T, typename... Args>
+    std::string formatString(const char* format, T&& arg, Args&&... args) {
+        size_t buf_size = 1024;
+        std::string result;
+        result.resize(buf_size);
+
+        int retval = snprintf(&result[0], buf_size, format, std::forward<T>(arg), std::forward<Args>(args)...);
+        if (retval < 0) {
+            return "Error formatting string";
+        }
+
+        result.resize(retval);
+        return result;
+    }
 
     const char* logLevelToString(LogLevel level) const;
 
@@ -43,16 +80,15 @@ private:
     std::string log_filename_;
     std::ofstream log_file_;
     LogLevel current_level_;
-    mutable std::mutex mutex_;  // Must be mutable
+    std::mutex mutex_;
 };
 
-// Macro definitions for easier logging
-#define LOG_TRACE(message) ::netsentry::utils::Logger::getInstance().log(::netsentry::utils::LogLevel::TRACE, message)
-#define LOG_DEBUG(message) ::netsentry::utils::Logger::getInstance().log(::netsentry::utils::LogLevel::DEBUG, message)
-#define LOG_INFO(message) ::netsentry::utils::Logger::getInstance().log(::netsentry::utils::LogLevel::INFO, message)
-#define LOG_WARNING(message) ::netsentry::utils::Logger::getInstance().log(::netsentry::utils::LogLevel::WARNING, message)
-#define LOG_ERROR(message) ::netsentry::utils::Logger::getInstance().log(::netsentry::utils::LogLevel::ERROR, message)
-#define LOG_CRITICAL(message) ::netsentry::utils::Logger::getInstance().log(::netsentry::utils::LogLevel::CRITICAL, message)
+#define LOG_TRACE(...) ::netsentry::utils::Logger::getInstance().log(::netsentry::utils::LogLevel::TRACE, __VA_ARGS__)
+#define LOG_DEBUG(...) ::netsentry::utils::Logger::getInstance().log(::netsentry::utils::LogLevel::DEBUG, __VA_ARGS__)
+#define LOG_INFO(...) ::netsentry::utils::Logger::getInstance().log(::netsentry::utils::LogLevel::INFO, __VA_ARGS__)
+#define LOG_WARNING(...) ::netsentry::utils::Logger::getInstance().log(::netsentry::utils::LogLevel::WARNING, __VA_ARGS__)
+#define LOG_ERROR(...) ::netsentry::utils::Logger::getInstance().log(::netsentry::utils::LogLevel::ERROR, __VA_ARGS__)
+#define LOG_CRITICAL(...) ::netsentry::utils::Logger::getInstance().log(::netsentry::utils::LogLevel::CRITICAL, __VA_ARGS__)
 
 }
 }
